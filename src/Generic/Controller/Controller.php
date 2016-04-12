@@ -6,7 +6,6 @@ use Crak\Component\RestNormalizer\Builder\ResponseBuilder;
 
 /**
  * Class Controller
- *
  */
 abstract class Controller
 {

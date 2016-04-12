@@ -1,14 +1,9 @@
 <?php
-/**
- * Created by JetBrains PhpStorm.
- * User: Jm
- * Date: 15-12-03
- * Time: 20:43
- * To change this template use File | Settings | File Templates.
- */
 
 namespace Support3w\Api\Generic\Controller;
 
+use Doctrine\DBAL\Exception\NotNullConstraintViolationException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Support3w\Api\Generic\Model\DefaultModel;
 use Support3w\Api\Generic\Paging\PaginatorService;
 use Support3w\Api\Generic\Repository\RepositoryBase;
@@ -17,33 +12,53 @@ use Support3w\JsonApiTransportService\Service\JsonApiTransportService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
+/**
+ * Class ControllerBase
+ *
+ * @package Support3w\Api\Generic\Controller
+ */
 abstract class ControllerBase extends Controller
 {
-
     /**
-     * @var \Support3w\Api\Generic\Repository\RepositoryBase;
+     * @var RepositoryBase;
      */
     protected $repository;
+    
     /**
      * @var \Symfony\Component\HttpFoundation\Request
      */
     protected $request;
+    
     /**
      * @var array
      */
     protected $hateoas;
+    
     /**
-     * @var \Support3w\Api\Generic\Paging\PaginatorService
+     * @var PaginatorService
      */
     protected $paginatorService;
 
     /**
-     * @var \Support3w\JsonApiTransportService\Service\JsonApiTransportService
+     * @var JsonApiTransportService
      */
     protected $jsonApiTransportService;
 
+    /**
+     * @var string
+     */
     protected $defaultModelClassName;
 
+    /**
+     * @param \Closure $responseBuilderClosure
+     * @param $logger
+     * @param RepositoryBase $repository
+     * @param Request $request
+     * @param array $hateoas
+     * @param PaginatorService $paginatorService
+     * @param JsonApiTransportService $jsonApiTransportService
+     * @param string $defaultModelClassName
+     */
     public function __construct(
         \Closure $responseBuilderClosure,
         $logger,
@@ -65,11 +80,18 @@ abstract class ControllerBase extends Controller
         $this->defaultModelClassName = $defaultModelClassName;
     }
 
+    /**
+     * Fetch ALL
+     * 
+     * @return JsonResponse
+     */
     public function fetchAll()
     {
-
         if ($this->request->query->count() >= 1) {
-            $data = $this->repository->findByParameters($this->paginatorService, $this->request->query->getIterator()->getArrayCopy());
+            $data = $this->repository->findByParameters(
+                $this->paginatorService, 
+                $this->request->query->getIterator()->getArrayCopy()
+            );
         } else {
             $data = $this->repository->fetchAll($this->paginatorService);
         }
@@ -85,44 +107,80 @@ abstract class ControllerBase extends Controller
             'pages' => $this->paginatorService->getBaseZeroPaging()->getPageCount(),
             'paging' => $this->paginatorService->getBaseZeroPaging()->getResponse()
         ], 200);
-
     }
 
+    /**
+     * Create
+     * 
+     * @return JsonResponse
+     */
     public function create()
     {
-
         try {
             /** @var DefaultModel $object */
             $reflectionClass = new ReflectionClass($this->defaultModelClassName);
             $object = $reflectionClass->newInstance();
             $object->loadFromJson($this->request->getContent());
             $object = $this->repository->create($object);
-            // convert object to array
+            
+            // Convert object to array
             $object = json_decode(json_encode($object), true);
             $object = $this->addHATEOAS($object);
 
-            return new JsonResponse(['status' => 'OK', 'data' => $object], 200);
-        } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $e) {
-            return new JsonResponse(['status' => 'error', 'msg' => 'Unique constraint violation.'], 409);
-        } catch (\Doctrine\DBAL\Exception\NotNullConstraintViolationException $e) {
-            return new JsonResponse(['status' => 'error', 'msg' => 'Field cannot be null.'], 417);
+            return new JsonResponse([
+                'status' => 'OK', 
+                'data' => $object
+            ], 200);
+            
+        } catch (UniqueConstraintViolationException $e) {
+            return new JsonResponse([
+                'status' => 'error', 
+                'msg' => 'Unique constraint violation.'
+            ], 409);
+            
+        } catch (NotNullConstraintViolationException $e) {
+            return new JsonResponse([
+                'status' => 'error', 
+                'msg' => 'Field cannot be null.'
+            ], 417);
+            
         } catch (\Exception $e) {
-            return new JsonResponse(['status' => 'error', 'msg' => $e->getMessage()], 500);
+            return new JsonResponse([
+                'status' => 'error', 
+                'msg' => $e->getMessage()
+            ], 500);
         }
     }
 
+    /**
+     * Find by ID
+     * 
+     * @param int $id
+     * 
+     * @return JsonResponse
+     */
     public function findById($id)
     {
         $data = $this->repository->findById($id);
         if ($data) {
             $data = $this->addHATEOAS($data);
         }
-        return new JsonResponse(['status' => 'OK', 'data' => $data], 200);
+        
+        return new JsonResponse([
+            'status' => 'OK', 
+            'data' => $data
+        ], 200);
     }
 
+    /**
+     * Update
+     * 
+     * @param int $id
+     * 
+     * @return JsonResponse
+     */
     public function update($id)
     {
-
         try {
             /** @var DefaultModel $object */
             $reflectionClass = new ReflectionClass($this->defaultModelClassName);
@@ -131,30 +189,59 @@ abstract class ControllerBase extends Controller
             // We preload the object first from the database, that allow partial update without error
             $data = $this->repository->findById($id);
             $object->loadFromArray($data);
-
             $object->loadFromJson($this->request->getContent());
             $object = $this->repository->update($object, $id);
             $object = json_decode(json_encode($object), true);
             $object = $this->addHATEOAS($object);
-            return new JsonResponse(['status' => 'OK', 'data' => $object], 200);
-        } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $e) {
-            return new JsonResponse(['status' => 'error', 'msg' => 'Unique constraint violation.'], 409);
-        } catch (\Doctrine\DBAL\Exception\NotNullConstraintViolationException $e) {
-            return new JsonResponse(['status' => 'error', 'msg' => 'Field cannot be null.'], 417);
+            
+            return new JsonResponse([
+                'status' => 'OK', 
+                'data' => $object
+            ], 200);
+            
+        } catch (UniqueConstraintViolationException $e) {
+            return new JsonResponse([
+                'status' => 'error', 
+                'msg' => 'Unique constraint violation.'
+            ], 409);
+            
+        } catch (NotNullConstraintViolationException $e) {
+            return new JsonResponse([
+                'status' => 'error', 
+                'msg' => 'Field cannot be null.'
+            ], 417);
+            
         } catch (\Exception $e) {
-            return new JsonResponse(['status' => 'error', 'msg' => $e->getMessage()], 500);
+            return new JsonResponse([
+                'status' => 'error', 
+                'msg' => $e->getMessage()
+            ], 500);
         }
-
-    }
-
-    public function delete($id)
-    {
-        $success = $this->repository->delete($id);
-        return new JsonResponse(['status' => 'OK', 'success' => $success], 200);
     }
 
     /**
+     * Delete
+     * 
+     * @param int $id
+     * 
+     * @return JsonResponse
+     * @throws \Support3w\Api\Generic\Exception\DataModificationException
+     */
+    public function delete($id)
+    {
+        $success = $this->repository->delete($id);
+        
+        return new JsonResponse([
+            'status' => 'OK', 
+            'success' => $success
+        ], 200);
+    }
+
+    /**
+     * Add hateoas
+     * 
      * @param array $data
+     * 
      * @return array
      */
     public function addHATEOAS(array $data)
@@ -163,8 +250,9 @@ abstract class ControllerBase extends Controller
     }
 
     /**
+     * Apply filters on Hateoas
+     * 
      * @return mixed
      */
     abstract public function applyFiltersOnHateoas();
-
 }
