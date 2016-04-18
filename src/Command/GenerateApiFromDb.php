@@ -135,13 +135,13 @@ class GenerateApiFromDb extends Command
         $controllerSample = file_get_contents(__DIR__ . '/Sample/ControllerSample.php');
 
         $controllerSample = str_replace(array('Support3w\Api\Command\Sample'), $this->apiNamespace . '\Controller', $controllerSample);
-        $controllerSample = str_replace('ControllerSample', $tableNamePascalCase, $controllerSample);
+        $controllerSample = str_replace('ControllerSample', $tableNamePascalCase . 'Controller', $controllerSample);
 
         if (!file_exists($this->controllerDestinationDirectory)) {
             mkdir($this->controllerDestinationDirectory, 0777, true);
         }
 
-        $destinationPath = $this->controllerDestinationDirectory . '/' . $tableNamePascalCase . '.php';
+        $destinationPath = $this->controllerDestinationDirectory . '/' . $tableNamePascalCase . 'Controller.php';
         file_put_contents($destinationPath, $controllerSample);
     }
 
@@ -193,7 +193,7 @@ class GenerateApiFromDb extends Command
 
         $propertyGeneration = S::create($propertiesGeneration)->trimLeft()->__toString();
         $defaultValuesGeneration = S::create($defaultValuesGeneration)->trimLeft()->__toString();
-        $modelSample = str_replace('ModelSample', $tableNamePascalCase, $modelSample);
+        $modelSample = str_replace('ModelSample', $tableNamePascalCase . 'Model', $modelSample);
         $modelSample = str_replace('//PROPERTIES_PLACE_HOLDER', $propertyGeneration, $modelSample);
         $modelSample = str_replace(array('Support3w\Api\Command\Sample', '//PACKAGE_NAME_PLACE_HOLDER'), $this->apiNamespace . '\Model', $modelSample);
         $modelSample = str_replace('//DEFAULT_PROPERTIES_VALUES_PLACE_HOLDER', $defaultValuesGeneration, $modelSample);
@@ -202,7 +202,7 @@ class GenerateApiFromDb extends Command
             mkdir($this->modelDestinationDirectory, 0777, true);
         }
 
-        $destinationPath = $this->modelDestinationDirectory . '/' . $tableNamePascalCase . '.php';
+        $destinationPath = $this->modelDestinationDirectory . '/' . $tableNamePascalCase . 'Model.php';
         file_put_contents($destinationPath, $modelSample);
     }
 }
