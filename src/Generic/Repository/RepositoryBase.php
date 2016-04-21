@@ -9,9 +9,11 @@ use Support3w\Api\Generic\Exception\InvalidDataIdException;
 use Support3w\Api\Generic\Model\ModelInterface;
 use Support3w\Api\Generic\Paging\PaginatorService;
 
+/**
+ * Class RepositoryBase
+ */
 abstract class RepositoryBase
 {
-
     /**
      * @var \Doctrine\DBAL\Connection
      */
@@ -22,26 +24,76 @@ abstract class RepositoryBase
      */
     protected $table;
 
-    protected $mainTableAlias = '';
-    protected $fieldTableAlias = array();
+    /**
+     * @var string
+     */
+    protected $mainTableAlias;
 
-    protected $equalFields = array();
-    protected $notEqualFields = array();
-    protected $joinEqualFields = array();
-    protected $joinNotEqualFields = array();
-    protected $inFields = array();
-    protected $notInFields = array();
-    protected $joinInFields = array();
-    protected $joinNotInFields = array();
+    /**
+     * @var array
+     */
+    protected $fieldTableAlias;
+
+    /**
+     * @var array
+     */
+    protected $equalFields;
+
+    /**
+     * @var array
+     */
+    protected $notEqualFields;
+
+    /**
+     * @var array
+     */
+    protected $joinEqualFields;
+
+    /**
+     * @var array
+     */
+    protected $joinNotEqualFields;
+
+    /**
+     * @var array
+     */
+    protected $inFields;
+
+    /**
+     * @var array
+     */
+    protected $notInFields;
+
+    /**
+     * @var array
+     */
+    protected $joinInFields;
+
+    /**
+     * @var array
+     */
+    protected $joinNotInFields;
+    
 
     /**
      * @param Connection $connection
-     * @param $table
+     * @param string $table
      */
     public function __construct(Connection $connection, $table)
     {
         $this->connection = $connection;
         $this->table = $table;
+        
+        $this->mainTableAlias = '';
+        $this->fieldTableAlias = array();
+        $this->equalFields = array();
+        $this->notEqualFields = array();
+        $this->joinEqualFields = array();
+        $this->joinNotEqualFields = array();
+        $this->inFields = array();
+        $this->notInFields = array();
+        $this->joinInFields = array();
+        $this->joinNotInFields = array();
     }
 
     /**
@@ -50,7 +102,6 @@ abstract class RepositoryBase
      */
     public function count($params = null)
     {
-
         $where = $this->prepareWhereClauseFromQueryString($params);
 
         $data = $this->connection->fetchAssoc('SELECT
@@ -63,6 +114,7 @@ abstract class RepositoryBase
 
     /**
      * @param PaginatorService $paginatorService
+     * 
      * @return array
      */
     public function fetchAll(PaginatorService $paginatorService)
@@ -70,22 +122,26 @@ abstract class RepositoryBase
         $paginatorService->setRowsCount($this->count());
         $paging = $paginatorService->getBaseZeroPaging();
         $data = $this->connection->fetchAll('SELECT * FROM `' . $this->table . '` ' . $this->mainTableAlias . ' WHERE deleted = 0 LIMIT ' . $paging->getStart() . "," . $paging->getLimit());
+        
         return $data;
     }
 
     /**
      * @param integer $id
+     * 
      * @return ModelInterface|null
      */
     public function findById($id)
     {
-        $data = $this->connection->fetchAssoc('SELECT * FROM `' . $this->table . '` ' . $this->mainTableAlias . ' WHERE id = ?', array((int)$id));
+        $data = $this->connection->fetchAssoc('SELECT * FROM `' . $this->table . '` ' . $this->mainTableAlias . ' WHERE id = ?', array((int) $id));
+        
         return $data;
     }
 
     /**
      * @param PaginatorService $paginatorService
-     * @param $params
+     * @param array $params
+     * 
      * @return array
      */
     public function findByParameters(PaginatorService $paginatorService, $params)
@@ -94,98 +150,116 @@ abstract class RepositoryBase
         $paging = $paginatorService->getBaseZeroPaging();
         $where = $this->prepareWhereClauseFromQueryString($params);
         $data = $this->connection->fetchAll('SELECT * FROM `' . $this->table . '` ' . $this->mainTableAlias . ' WHERE 1=1 ' . $where . ' LIMIT ' . $paging->getStart() . "," . $paging->getLimit(), array_values($params));
+        
         return $data;
     }
 
     /**
      * @param array $joinEqualFields
+     * 
      * @return mixed
      */
     abstract public function buildJoinEqualFields(array $joinEqualFields);
 
     /**
      * @param array $joinNotEqualFields
+     * 
      * @return mixed
      */
     abstract public function buildJoinNotEqualFields(array $joinNotEqualFields);
 
     /**
      * @param array $joinInFields
+     * 
      * @return mixed
      */
     abstract public function buildJoinInFields(array $joinInFields);
 
     /**
      * @param array $joinNotInFields
+     * 
      * @return mixed
      */
     abstract public function buildJoinNotInFields(array $joinNotInFields);
 
     /**
      * @param ModelInterface $model
+     * 
      * @return ModelInterface
      * @throws \Support3w\Api\Generic\Exception\DataCreationException
      */
     public function create(ModelInterface $model)
     {
-
         $success = $this->connection->insert('`' . $this->table . '`', $this->escapeFieldName($model->jsonSerialize()));
 
         if (!$success) {
-            throw new DataCreationException("Query failed");
+            throw new DataCreationException('Query failed');
         }
 
-        $lastInsertedId = (int)$this->connection->lastInsertId();
-
+        $lastInsertedId = (int) $this->connection->lastInsertId();
         $model->setId($lastInsertedId);
 
         return $model;
     }
 
+    /**
+     * @param array $array
+     * 
+     * @return array
+     */
     private function escapeFieldName($array)
     {
-
         foreach ($array as $key => $value) {
             $array['`' . $key . '`'] = $value;
             unset($array[$key]);
         }
+        
         return $array;
     }
 
     /**
      * @param ModelInterface $model
-     * @param $id
+     * @param int $id
+     * 
      * @return ModelInterface
      * @throws \Support3w\Api\Generic\Exception\InvalidDataIdException
      * @throws \Support3w\Api\Generic\Exception\DataModificationException
      */
     public function update(ModelInterface $model, $id)
     {
-
         if (is_null($model->getId())) {
-            throw new InvalidDataIdException("ID must be given in Json too");
+            throw new InvalidDataIdException('ID must be given in Json too');
         }
 
-        $success = $this->connection->update($this->table, $this->escapeFieldName($model->jsonSerialize()), array('id' => $id));
-
-        if (!$success) {
-            throw new DataModificationException("Query failed, that ID may not exist or there is nothing to update.");
+        try {
+            $this->connection->update($this->table, $this->escapeFieldName($model->jsonSerialize()), array(
+                'id' => $id,
+            ));
+        }
+        catch (\Exception $e) {
+            throw new DataModificationException('Query failed, that ID may not exist or there is nothing to update.');
         }
 
         return $model;
     }
 
     /**
-     * @param $id
+     * @param int $id
+     * 
      * @return bool
      * @throws \Support3w\Api\Generic\Exception\DataModificationException
      */
     public function delete($id)
     {
-        $success = $this->connection->update($this->table, array('deleted' => 1), array('id' => $id));
+        try {
+            $this->connection->update(
+                $this->table,
+                array('deleted' => 1),
+                array('id' => $id)
+            );
 
-        if (!$success) {
-            throw new DataModificationException("Query failed, that ID may not exist or the object is already deleted.");
+        } catch (\Exception $e) {
+            throw new DataModificationException('Query failed, that ID may not exist or the object is already deleted.');
         }
 
         return true;
@@ -193,11 +267,11 @@ abstract class RepositoryBase
 
     /**
      * @param array $fieldNames
+     * 
      * @return array
      */
     public function resolveTableAliasForParamsArray(array $fieldNames)
     {
-
         $fieldNamesWithTableAliases = array();
 
         foreach ($fieldNames as $field) {
@@ -205,11 +279,11 @@ abstract class RepositoryBase
         }
 
         return $fieldNamesWithTableAliases;
-
     }
 
     /**
-     * @param $field
+     * @param string $field
+     * 
      * @return string
      */
     public function resolveTableAliasForParam($field)
@@ -218,25 +292,26 @@ abstract class RepositoryBase
     }
 
     /**
-     * @param $field
+     * @param string $field
+     * 
      * @return string
      */
     public function getTableAliasForParam($field)
     {
         if (!isset($this->fieldTableAlias[$field])) {
             return $this->mainTableAlias;
-        } else {
-            return $this->fieldTableAlias[$field];
         }
+        
+        return $this->fieldTableAlias[$field];
     }
 
     /**
-     * @param $equalFields
+     * @param string $equalFields
+     * 
      * @return string
      */
     public function buildEqualFields($equalFields)
     {
-
         $equalFields = $this->escapeFieldName($equalFields);
 
         $where = '';
@@ -245,16 +320,17 @@ abstract class RepositoryBase
             $where .= implode($this->resolveTableAliasForParamsArray(array_keys($equalFields)), '=? AND ');
             $where .= '=?';
         }
+        
         return $where;
     }
 
     /**
-     * @param $notEqualFields
+     * @param string $notEqualFields
+     * 
      * @return string
      */
     public function buildNotEqualFields($notEqualFields)
     {
-
         $notEqualFields = $this->escapeFieldName($notEqualFields);
 
         $where = '';
@@ -263,51 +339,54 @@ abstract class RepositoryBase
             $where .= implode($this->resolveTableAliasForParamsArray(array_keys($notEqualFields)), '!=? AND ');
             $where .= '!=?';
         }
+        
         return $where;
     }
 
     /**
      * @param array $inFields
+     * 
      * @return string
      */
     public function buildInFields(array $inFields)
     {
-
         $inFields = $this->escapeFieldName($inFields);
 
         $where = '';
         foreach ($inFields as $idx => $paramValue) {
             $where .= ' AND ' . $this->resolveTableAliasForParam($idx) . " IN ('" . implode("','", $paramValue) . "')";
         }
+        
         return $where;
     }
 
     /**
      * @param array $notInFields
+     * 
      * @return string
      */
     public function buildNotInFields(array $notInFields)
     {
-
         $notInFields = $this->escapeFieldName($notInFields);
 
         $where = '';
         foreach ($notInFields as $idx => $paramValue) {
             $where .= ' AND ' . $this->resolveTableAliasForParam($idx) . " NOT IN ('" . implode("','", $paramValue) . "')";
         }
+        
         return $where;
     }
 
 
     /**
-     * @param $params
+     * @param array $params
      * @param string $groupBy
      * @param bool $noOrderClause
+     * 
      * @return string
      */
     public function prepareWhereClauseFromQueryString(&$params, $groupBy = '', $noOrderClause = false)
     {
-
         $this->notEqualFields = [];
         $this->joinNotEqualFields = [];
         $this->equalFields = [];
@@ -450,13 +529,16 @@ abstract class RepositoryBase
         }
 
         $where .= $groupBy . ' ' . $orderBy;
+        
         return $where;
     }
 
+    /**
+     * @return string
+     */
     public function applyJoin()
     {
-
-        $join = "";
+        $join = '';
 
         if (count($this->joinEqualFields) > 0) {
             $join .= $this->buildJoinEqualFields($this->joinEqualFields);
@@ -467,14 +549,14 @@ abstract class RepositoryBase
         }
 
         return $join;
-
-
     }
 
+    /**
+     * @return string
+     */
     public function applyJoinNot()
     {
-
-        $joinNot = "";
+        $joinNot = '';
 
         if (count($this->joinNotInFields) > 0) {
             $joinNot .= $this->buildJoinNotInFields($this->joinNotInFields);
@@ -485,27 +567,29 @@ abstract class RepositoryBase
         }
 
         return $joinNot;
-
     }
-
-
+    
     /**
-     * @param $id
+     * @param int $id
+     * 
      * @return array
      */
     public function findNext($id)
     {
-        $data = $this->connection->fetchAssoc('SELECT * FROM `' . $this->table . '` WHERE deleted = 0 AND id > ? ORDER BY id ASC LIMIT 1', array((int)$id));
+        $data = $this->connection->fetchAssoc('SELECT * FROM `' . $this->table . '` WHERE deleted = 0 AND id > ? ORDER BY id ASC LIMIT 1', array((int) $id));
+        
         return $data;
     }
 
     /**
-     * @param $id
+     * @param int $id
+     * 
      * @return array
      */
     public function findPrevious($id)
     {
-        $data = $this->connection->fetchAssoc('SELECT * FROM `' . $this->table . '` WHERE deleted = 0 AND id < ? ORDER BY id DESC LIMIT 1', array((int)$id));
+        $data = $this->connection->fetchAssoc('SELECT * FROM `' . $this->table . '` WHERE deleted = 0 AND id < ? ORDER BY id DESC LIMIT 1', array((int) $id));
+        
         return $data;
     }
 }
