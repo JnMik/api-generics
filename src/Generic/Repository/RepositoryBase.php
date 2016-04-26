@@ -402,11 +402,10 @@ abstract class RepositoryBase
     /**
      * @param array $params
      * @param string $groupBy
-     * @param bool $noOrderClause
      *
      * @return string
      */
-    public function prepareWhereClauseFromQueryString(&$params, $groupBy = '', $noOrderClause = false)
+    public function prepareWhereClauseFromQueryString(&$params, $groupBy = '')
     {
         $this->notEqualFields = [];
         $this->joinNotEqualFields = [];
@@ -453,12 +452,8 @@ abstract class RepositoryBase
             }
 
             if (isset($params['sort'])) {
-                if (!$noOrderClause) {
-                    $sort = array();
-                }
                 unset($params['sort']);
             }
-
         }
 
         if (empty($params)) {
