@@ -73,7 +73,7 @@ abstract class RepositoryBase
      * @var array
      */
     protected $joinNotInFields;
-    
+
 
     /**
      * @param Connection $connection
@@ -83,7 +83,7 @@ abstract class RepositoryBase
     {
         $this->connection = $connection;
         $this->table = $table;
-        
+
         $this->mainTableAlias = '';
         $this->fieldTableAlias = array();
         $this->equalFields = array();
@@ -114,7 +114,7 @@ abstract class RepositoryBase
 
     /**
      * @param PaginatorService $paginatorService
-     * 
+     *
      * @return array
      */
     public function fetchAll(PaginatorService $paginatorService)
@@ -122,69 +122,70 @@ abstract class RepositoryBase
         $paginatorService->setRowsCount($this->count());
         $paging = $paginatorService->getBaseZeroPaging();
         $data = $this->connection->fetchAll('SELECT * FROM `' . $this->table . '` ' . $this->mainTableAlias . ' WHERE deleted = 0 LIMIT ' . $paging->getStart() . "," . $paging->getLimit());
-        
+
         return $data;
     }
 
     /**
      * @param integer $id
-     * 
+     *
      * @return ModelInterface|null
      */
     public function findById($id)
     {
         $data = $this->connection->fetchAssoc('SELECT * FROM `' . $this->table . '` ' . $this->mainTableAlias . ' WHERE id = ?', array((int) $id));
-        
+
         return $data;
     }
 
     /**
      * @param PaginatorService $paginatorService
      * @param array $params
-     * 
+     *
      * @return array
      */
     public function findByParameters(PaginatorService $paginatorService, $params)
     {
         $paginatorService->setRowsCount($this->count($params));
         $paging = $paginatorService->getBaseZeroPaging();
+        $fields = $this->prepareFieldsFromQueryString($params);
         $where = $this->prepareWhereClauseFromQueryString($params);
-        $data = $this->connection->fetchAll('SELECT * FROM `' . $this->table . '` ' . $this->mainTableAlias . ' WHERE 1=1 ' . $where . ' LIMIT ' . $paging->getStart() . "," . $paging->getLimit(), array_values($params));
-        
+        $data = $this->connection->fetchAll('SELECT ' . $fields . ' FROM `' . $this->table . '` ' . $this->mainTableAlias . ' WHERE 1=1 ' . $where . ' LIMIT ' . $paging->getStart() . "," . $paging->getLimit(), array_values($params));
+
         return $data;
     }
 
     /**
      * @param array $joinEqualFields
-     * 
+     *
      * @return mixed
      */
     abstract public function buildJoinEqualFields(array $joinEqualFields);
 
     /**
      * @param array $joinNotEqualFields
-     * 
+     *
      * @return mixed
      */
     abstract public function buildJoinNotEqualFields(array $joinNotEqualFields);
 
     /**
      * @param array $joinInFields
-     * 
+     *
      * @return mixed
      */
     abstract public function buildJoinInFields(array $joinInFields);
 
     /**
      * @param array $joinNotInFields
-     * 
+     *
      * @return mixed
      */
     abstract public function buildJoinNotInFields(array $joinNotInFields);
 
     /**
      * @param ModelInterface $model
-     * 
+     *
      * @return ModelInterface
      * @throws \Support3w\Api\Generic\Exception\DataCreationException
      */
@@ -204,7 +205,7 @@ abstract class RepositoryBase
 
     /**
      * @param array $array
-     * 
+     *
      * @return array
      */
     private function escapeFieldName($array)
@@ -213,14 +214,14 @@ abstract class RepositoryBase
             $array['`' . $key . '`'] = $value;
             unset($array[$key]);
         }
-        
+
         return $array;
     }
 
     /**
      * @param ModelInterface $model
      * @param int $id
-     * 
+     *
      * @return ModelInterface
      * @throws \Support3w\Api\Generic\Exception\InvalidDataIdException
      * @throws \Support3w\Api\Generic\Exception\DataModificationException
@@ -237,7 +238,7 @@ abstract class RepositoryBase
             ));
         }
         catch (\Exception $e) {
-            throw new DataModificationException('Query failed, that ID may not exist or there is nothing to update.');
+            throw new DataModificationException('Query failed, that ID may not exist or there is nothing to update. ' . $e->getMessage());
         }
 
         return $model;
@@ -245,7 +246,7 @@ abstract class RepositoryBase
 
     /**
      * @param int $id
-     * 
+     *
      * @return bool
      * @throws \Support3w\Api\Generic\Exception\DataModificationException
      */
@@ -267,7 +268,7 @@ abstract class RepositoryBase
 
     /**
      * @param array $fieldNames
-     * 
+     *
      * @return array
      */
     public function resolveTableAliasForParamsArray(array $fieldNames)
@@ -283,7 +284,7 @@ abstract class RepositoryBase
 
     /**
      * @param string $field
-     * 
+     *
      * @return string
      */
     public function resolveTableAliasForParam($field)
@@ -293,7 +294,7 @@ abstract class RepositoryBase
 
     /**
      * @param string $field
-     * 
+     *
      * @return string
      */
     public function getTableAliasForParam($field)
@@ -301,13 +302,13 @@ abstract class RepositoryBase
         if (!isset($this->fieldTableAlias[$field])) {
             return $this->mainTableAlias;
         }
-        
+
         return $this->fieldTableAlias[$field];
     }
 
     /**
      * @param string $equalFields
-     * 
+     *
      * @return string
      */
     public function buildEqualFields($equalFields)
@@ -320,13 +321,13 @@ abstract class RepositoryBase
             $where .= implode($this->resolveTableAliasForParamsArray(array_keys($equalFields)), '=? AND ');
             $where .= '=?';
         }
-        
+
         return $where;
     }
 
     /**
      * @param string $notEqualFields
-     * 
+     *
      * @return string
      */
     public function buildNotEqualFields($notEqualFields)
@@ -339,13 +340,13 @@ abstract class RepositoryBase
             $where .= implode($this->resolveTableAliasForParamsArray(array_keys($notEqualFields)), '!=? AND ');
             $where .= '!=?';
         }
-        
+
         return $where;
     }
 
     /**
      * @param array $inFields
-     * 
+     *
      * @return string
      */
     public function buildInFields(array $inFields)
@@ -356,13 +357,13 @@ abstract class RepositoryBase
         foreach ($inFields as $idx => $paramValue) {
             $where .= ' AND ' . $this->resolveTableAliasForParam($idx) . " IN ('" . implode("','", $paramValue) . "')";
         }
-        
+
         return $where;
     }
 
     /**
      * @param array $notInFields
-     * 
+     *
      * @return string
      */
     public function buildNotInFields(array $notInFields)
@@ -373,33 +374,61 @@ abstract class RepositoryBase
         foreach ($notInFields as $idx => $paramValue) {
             $where .= ' AND ' . $this->resolveTableAliasForParam($idx) . " NOT IN ('" . implode("','", $paramValue) . "')";
         }
-        
+
         return $where;
+    }
+
+    /**
+     * @param array $params
+     *
+     * @return string
+     */
+    public function prepareFieldsFromQueryString($params)
+    {
+        $fields = '*';
+        if (isset($params['fields'])) {
+            $fields = array();
+            $selected = explode(',', $params['fields']);
+            foreach ($selected as $field) {
+                $fields[] = '`' . trim($field) . '`';
+            }
+            $fields = implode(',', $fields);
+        }
+
+        return $fields;
     }
 
 
     /**
      * @param array $params
      * @param string $groupBy
-     * @param bool $noOrderClause
-     * 
+     *
      * @return string
      */
-    public function prepareWhereClauseFromQueryString(&$params, $groupBy = '', $noOrderClause = false)
+    public function prepareWhereClauseFromQueryString(&$params, $groupBy = '')
     {
         $this->notEqualFields = [];
         $this->joinNotEqualFields = [];
         $this->equalFields = [];
         $this->joinEqualFields = [];
-
-        $sort = 'ASC';
-        $orderBy = '';
+        $sort = [];
 
         if (isset($params)) {
 
             if (isset($params['sort'])) {
-                $sort = $params['sort'];
-                unset($params['sort']);
+                $orderByGroups = explode(',', $params['sort']);
+                foreach ($orderByGroups as $group) {
+                    $group = trim($group);
+                    if (strstr($group, '-')) {
+                        $sort[] = substr($group, 1) . ' DESC';
+                    } else {
+                        if (strstr($group, '+')) {
+                            $sort[] = substr($group, 1) . ' ASC';
+                        } else {
+                            $sort[] = $group . ' ASC';
+                        }
+                    }
+                }
             }
 
             if (isset($params['start'])) {
@@ -418,13 +447,13 @@ abstract class RepositoryBase
                 unset($params['hateoasFilters']);
             }
 
-            if (isset($params['orderBy'])) {
-                if (!$noOrderClause) {
-                    $orderBy = ' ORDER BY ' . $params['orderBy'] . ' ' . $sort;
-                }
-                unset($params['orderBy']);
+            if (isset($params['fields'])) {
+                unset($params['fields']);
             }
 
+            if (isset($params['sort'])) {
+                unset($params['sort']);
+            }
         }
 
         if (empty($params)) {
@@ -476,26 +505,6 @@ abstract class RepositoryBase
 
         }
 
-        /*
-        echo "Equal fields";
-        var_dump($equalFields);
-        echo "Not Equal fields";
-        var_dump($notEqualFields);
-        echo "Join Equal fields";
-        var_dump($joinEqualFields);
-        echo "join Not Equal fields";
-        var_dump($joinNotEqualFields);
-        echo "In fields";
-        var_dump($inFields);
-        echo "Not In fields";
-        var_dump($notInFields);
-        echo "Join In fields";
-        var_dump($joinInFields);
-        echo "Join Not In fields";
-        var_dump($joinNotInFields);
-        die;
-        */
-
         if (count($this->equalFields) > 0) {
             $where .= $this->buildEqualFields($this->equalFields);
         }
@@ -528,8 +537,11 @@ abstract class RepositoryBase
             $where .= ' AND JoinNotExpectedResultEquals.id IS NULL';
         }
 
-        $where .= $groupBy . ' ' . $orderBy;
-        
+        $where .= $groupBy;
+        if (count($sort) >= 1) {
+            $where .= ' ORDER BY ' . implode(',', $sort);
+        }
+
         return $where;
     }
 
@@ -568,28 +580,28 @@ abstract class RepositoryBase
 
         return $joinNot;
     }
-    
+
     /**
      * @param int $id
-     * 
+     *
      * @return array
      */
     public function findNext($id)
     {
         $data = $this->connection->fetchAssoc('SELECT * FROM `' . $this->table . '` WHERE deleted = 0 AND id > ? ORDER BY id ASC LIMIT 1', array((int) $id));
-        
+
         return $data;
     }
 
     /**
      * @param int $id
-     * 
+     *
      * @return array
      */
     public function findPrevious($id)
     {
         $data = $this->connection->fetchAssoc('SELECT * FROM `' . $this->table . '` WHERE deleted = 0 AND id < ? ORDER BY id DESC LIMIT 1', array((int) $id));
-        
+
         return $data;
     }
 }
