@@ -48,7 +48,7 @@ class RepositoryProvider implements ServiceProviderInterface
                     $fieldTableAlias = array(
                         'id' => $underscored
                     );
-                    $mainTableAlias = $underscored;
+                    $mainTableAlias = $underscored . '_alias';
                     
                     // If custom repository exist
                     $repositoryNs = $controller->getRepositoryNamespace();
