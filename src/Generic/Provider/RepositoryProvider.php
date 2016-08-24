@@ -11,6 +11,7 @@ use Support3w\Api\Generic\Repository\DefaultRepository;
  * Class RepositoryProvider
  *
  * @package Support3w\Api\Generic\Provider
+ * @author  Jean-Michael Cyr <cyrjeanmichael@gmail.com>
  * @author  Olivier Beauchemin <obeauchemin@crakmedia.com>
  */
 class RepositoryProvider implements ServiceProviderInterface
@@ -41,21 +42,22 @@ class RepositoryProvider implements ServiceProviderInterface
         /** @var Controller $controller */
         foreach ($this->controllers as $controller) {
             $underscored = $controller->getNameUnderscored();
-            
+
             $app[$underscored . '.repository'] = $app->share(
                 function () use ($app, $controller) {
                     $underscored = $controller->getNameUnderscored();
+                    // we add _alias to avoid using reserved keywords
                     $fieldTableAlias = array(
-                        'id' => $underscored
+                        'id' => $underscored . '_alias'
                     );
                     $mainTableAlias = $underscored . '_alias';
-                    
+
                     // If custom repository exist
                     $repositoryNs = $controller->getRepositoryNamespace();
                     if (class_exists($repositoryNs)) {
                         return new $repositoryNs($app['db'], $underscored, $fieldTableAlias, $mainTableAlias);
                     }
-                    
+
                     return new DefaultRepository($app['db'], $underscored, $fieldTableAlias, $mainTableAlias);
                 }
             );
