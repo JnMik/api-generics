@@ -75,7 +75,12 @@ abstract class DefaultModel implements \JsonSerializable
         $response = array();
         foreach (get_object_vars($this) as $property => $value) {
             $underscored = S::create($property)->underscored()->__toString();
-            $response[$underscored] = $this->{$property};
+
+            if(is_object($this->{$property}) && is_a($this->{$property}, 'datetime')) {
+                $response[$underscored] = $this->{$property}->format('Y-m-d H:i:s');
+            }else{
+                $response[$underscored] = $this->{$property};
+            }
         }
 
         $response['id'] = $this->getId();
@@ -94,7 +99,11 @@ abstract class DefaultModel implements \JsonSerializable
         foreach (get_object_vars($this) as $property => $value) {
             $underscored = S::create($property)->underscored()->__toString();
             if (isset($array[$underscored])) {
-                $this->{$property} = $array[$underscored];
+                if(is_object($this->{$property}) && is_a($this->{$property}, 'datetime')) {
+                    $this->{$property} = new \Datetime($array[$underscored]);
+                }else{
+                    $this->{$property} = $array[$underscored];
+                }
             }
         }
     }
