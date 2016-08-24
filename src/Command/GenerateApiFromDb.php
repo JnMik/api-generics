@@ -54,7 +54,8 @@ class GenerateApiFromDb extends Command
             'longtext' => 'string',
             'varchar' => 'string',
             'datetime' => '\Datetime',
-            'time' => 'string'
+            'time' => 'string',
+            'timestamp' => '\Datetime'
         );
     }
 
@@ -150,8 +151,8 @@ class GenerateApiFromDb extends Command
 
         $fieldsToIgnored = array('id', 'deleted');
         $tableInformations = $informationSchemaConnection->fetchAll(
-            'SELECT COLUMN_NAME, IS_NULLABLE, DATA_TYPE, COLUMN_DEFAULT FROM COLUMNS WHERE TABLE_NAME =  ?',
-            array($tableName)
+            'SELECT COLUMN_NAME, IS_NULLABLE, DATA_TYPE, COLUMN_DEFAULT FROM COLUMNS WHERE TABLE_NAME =  ? AND TABLE_SCHEMA = ?',
+            array($tableName, $this->params['dbname'])
         );
 
         $propertiesGeneration = '';
@@ -180,6 +181,10 @@ class GenerateApiFromDb extends Command
 
                 if ($column['COLUMN_DEFAULT'] !== 'NULL') {
                     $defaultValue = $column['COLUMN_DEFAULT'];
+                }
+
+                if ($column['COLUMN_DEFAULT'] == 'CURRENT_TIMESTAMP') {
+                    $defaultValue = 'new \Datetime()';
                 }
 
                 if ($defaultValue) {
