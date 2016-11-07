@@ -3,6 +3,7 @@
 namespace Support3w\Api\Generic\Model;
 
 use Stringy\Stringy as S;
+use Support3w\Api\Generic\Exception\InvalidJsonException;
 
 /**
  * Class DefaultModel
@@ -110,10 +111,15 @@ abstract class DefaultModel implements \JsonSerializable
 
     /**
      * @param $json
+     * @throws InvalidJsonException
      */
     public function loadFromJson($json)
     {
         $array = json_decode($json, true);
+
+        if(!is_array($array)) {
+            throw new InvalidJsonException('Result cannot be decoded to array, is JSON valid ? ');
+        }
         $this->loadFromArray($array);
     }
 }

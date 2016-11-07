@@ -4,6 +4,7 @@ namespace Support3w\Api\Generic\Controller;
 
 use Doctrine\DBAL\Exception\NotNullConstraintViolationException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Exception;
 use Support3w\Api\Generic\Model\DefaultModel;
 use Support3w\Api\Generic\Paging\PaginatorService;
 use Support3w\Api\Generic\Repository\RepositoryBase;
@@ -135,19 +136,22 @@ abstract class ControllerBase extends Controller
         } catch (UniqueConstraintViolationException $e) {
             return new JsonResponse([
                 'status' => 'error', 
-                'msg' => 'Unique constraint violation.'
+                'msg' => 'Unique constraint violation.',
+                'dev_details' => $e->getMessage()
             ], 409);
             
         } catch (NotNullConstraintViolationException $e) {
             return new JsonResponse([
                 'status' => 'error', 
-                'msg' => 'Field cannot be null.'
+                'msg' => 'Field cannot be null.',
+                'dev_details' => $e->getMessage()
             ], 417);
             
         } catch (\Exception $e) {
             return new JsonResponse([
                 'status' => 'error', 
-                'msg' => $e->getMessage()
+                'msg' => 'Unexpected error.',
+                'dev_details' => $e->getMessage()
             ], 500);
         }
     }
@@ -202,19 +206,22 @@ abstract class ControllerBase extends Controller
         } catch (UniqueConstraintViolationException $e) {
             return new JsonResponse([
                 'status' => 'error', 
-                'msg' => 'Unique constraint violation.'
+                'msg' => 'Unique constraint violation.',
+                'dev_details' => $e->getMessage()
             ], 409);
             
         } catch (NotNullConstraintViolationException $e) {
             return new JsonResponse([
                 'status' => 'error', 
-                'msg' => 'Field cannot be null.'
+                'msg' => 'Field cannot be null.',
+                'dev_details' => $e->getMessage()
             ], 417);
             
         } catch (\Exception $e) {
             return new JsonResponse([
                 'status' => 'error', 
-                'msg' => $e->getMessage()
+                'msg' => 'Unexpected error.',
+                'dev_details' => $e->getMessage()
             ], 500);
         }
     }
@@ -229,12 +236,22 @@ abstract class ControllerBase extends Controller
      */
     public function delete($id)
     {
-        $success = $this->repository->delete($id);
-        
-        return new JsonResponse([
-            'status' => 'OK', 
-            'success' => $success
-        ], 200);
+
+        try {
+            $success = $this->repository->delete($id);
+
+            return new JsonResponse([
+                'status' => 'OK',
+                'success' => $success
+            ], 200);
+        }catch(Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'msg' => 'Unexpected error.',
+                'dev_details' => $e->getMessage()
+            ], 500);
+        }
+
     }
 
     /**
