@@ -88,26 +88,35 @@ abstract class ControllerBase extends Controller
      */
     public function fetchAll()
     {
-        if ($this->request->query->count() >= 1) {
-            $data = $this->repository->findByParameters(
-                $this->paginatorService, 
-                $this->request->query->getIterator()->getArrayCopy()
-            );
-        } else {
-            $data = $this->repository->fetchAll($this->paginatorService);
-        }
+        try {
+            if ($this->request->query->count() >= 1) {
+                $data = $this->repository->findByParameters(
+                    $this->paginatorService,
+                    $this->request->query->getIterator()->getArrayCopy()
+                );
+            } else {
+                $data = $this->repository->fetchAll($this->paginatorService);
+            }
 
-        if ($data) {
-            $data = $this->addHATEOAS($data);
-        }
+            if ($data) {
+                $data = $this->addHATEOAS($data);
+            }
 
-        return new JsonResponse([
-            'status' => 'OK',
-            'data' => $data,
-            'rows' => $this->paginatorService->getBaseZeroPaging()->getRowsCount(),
-            'pages' => $this->paginatorService->getBaseZeroPaging()->getPageCount(),
-            'paging' => $this->paginatorService->getBaseZeroPaging()->getResponse()
-        ], 200);
+            return new JsonResponse([
+                'status' => 'OK',
+                'data' => $data,
+                'rows' => $this->paginatorService->getBaseZeroPaging()->getRowsCount(),
+                'pages' => $this->paginatorService->getBaseZeroPaging()->getPageCount(),
+                'paging' => $this->paginatorService->getBaseZeroPaging()->getResponse()
+            ], 200);
+
+        }catch(Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'msg' => 'Unexpected error.',
+                'dev_details' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -165,15 +174,26 @@ abstract class ControllerBase extends Controller
      */
     public function findById($id)
     {
-        $data = $this->repository->findById($id);
-        if ($data) {
-            $data = $this->addHATEOAS($data);
+        try {
+
+            $data = $this->repository->findById($id);
+
+            if ($data) {
+                $data = $this->addHATEOAS($data);
+            }
+
+            return new JsonResponse([
+                'status' => 'OK',
+                'data' => $data
+            ], 200);
+
+        }catch(Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'msg' => 'Unexpected error.',
+                'dev_details' => $e->getMessage()
+            ], 500);
         }
-        
-        return new JsonResponse([
-            'status' => 'OK', 
-            'data' => $data
-        ], 200);
     }
 
     /**
