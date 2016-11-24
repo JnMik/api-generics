@@ -27,7 +27,7 @@ class ControllerProvider implements ServiceProviderInterface
     {
         $this->controllers = $controllers;
     }
-    
+
     /**
      * Registers services on the given app.
      *
@@ -44,7 +44,7 @@ class ControllerProvider implements ServiceProviderInterface
             $app[$underscored . '.controller'] = $app->share(
                 function () use ($app, $controller) {
                     $namespace = $controller->getNamespace();
-                    
+
                     return new $namespace(
                         $app['rest_normalizer.builder'],
                         $app['logger'],
@@ -59,7 +59,7 @@ class ControllerProvider implements ServiceProviderInterface
             );
         }
     }
-    
+
     /**
      * Bootstraps the application.
      *

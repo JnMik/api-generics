@@ -37,7 +37,7 @@ class Controller
      */
     private $fullName;
 
-    
+
     /**
      * @param string $namespace
      */
@@ -96,7 +96,7 @@ class Controller
     public function getNameUnderscored()
     {
         $underscored = S::create($this->name)->underscored()->__toString();
-        
+
         return $underscored;
     }
 

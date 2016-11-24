@@ -127,9 +127,9 @@ abstract class RepositoryBase
     }
 
     /**
-     * @param integer $id
+     * @param $id
      *
-     * @return ModelInterface|null
+     * @return array
      */
     public function findById($id)
     {

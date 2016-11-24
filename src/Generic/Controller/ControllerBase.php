@@ -5,7 +5,9 @@ namespace Support3w\Api\Generic\Controller;
 use Doctrine\DBAL\Exception\NotNullConstraintViolationException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
+use Support3w\Api\Generic\Exception\InvalidDataIdException;
 use Support3w\Api\Generic\Model\DefaultModel;
+use Support3w\Api\Generic\Model\ModelInterface;
 use Support3w\Api\Generic\Paging\PaginatorService;
 use Support3w\Api\Generic\Repository\RepositoryBase;
 use ReflectionClass;
@@ -24,17 +26,17 @@ abstract class ControllerBase extends Controller
      * @var RepositoryBase;
      */
     protected $repository;
-    
+
     /**
      * @var \Symfony\Component\HttpFoundation\Request
      */
     protected $request;
-    
+
     /**
      * @var array
      */
     protected $hateoas;
-    
+
     /**
      * @var PaginatorService
      */
@@ -71,7 +73,7 @@ abstract class ControllerBase extends Controller
         $defaultModelClassName
     )
     {
-        parent::__construct($responseBuilderClosure, $logger);
+        parent::__construct($responseBuilderClosure);
 
         $this->repository = $repository;
         $this->request = $request;
@@ -83,7 +85,7 @@ abstract class ControllerBase extends Controller
 
     /**
      * Fetch ALL
-     * 
+     *
      * @return JsonResponse
      */
     public function fetchAll()
@@ -121,7 +123,7 @@ abstract class ControllerBase extends Controller
 
     /**
      * Create
-     * 
+     *
      * @return JsonResponse
      */
     public function create()
@@ -132,33 +134,37 @@ abstract class ControllerBase extends Controller
             $object = $reflectionClass->newInstance();
             $object->loadFromJson($this->request->getContent());
             $object = $this->repository->create($object);
-            
+
             // Convert object to array
             $object = json_decode(json_encode($object), true);
+
+            /**
+             * @var array $object
+             */
             $object = $this->addHATEOAS($object);
 
             return new JsonResponse([
-                'status' => 'OK', 
+                'status' => 'OK',
                 'data' => $object
             ], 200);
-            
+
         } catch (UniqueConstraintViolationException $e) {
             return new JsonResponse([
-                'status' => 'error', 
+                'status' => 'error',
                 'msg' => 'Unique constraint violation.',
                 'dev_details' => $e->getMessage()
             ], 409);
-            
+
         } catch (NotNullConstraintViolationException $e) {
             return new JsonResponse([
-                'status' => 'error', 
+                'status' => 'error',
                 'msg' => 'Field cannot be null.',
                 'dev_details' => $e->getMessage()
             ], 417);
-            
+
         } catch (\Exception $e) {
             return new JsonResponse([
-                'status' => 'error', 
+                'status' => 'error',
                 'msg' => 'Unexpected error.',
                 'dev_details' => $e->getMessage()
             ], 500);
@@ -167,9 +173,9 @@ abstract class ControllerBase extends Controller
 
     /**
      * Find by ID
-     * 
+     *
      * @param int $id
-     * 
+     *
      * @return JsonResponse
      */
     public function findById($id)
@@ -198,15 +204,20 @@ abstract class ControllerBase extends Controller
 
     /**
      * Update
-     * 
+     *
      * @param int $id
-     * 
+     *
      * @return JsonResponse
      */
     public function update($id)
     {
         try {
-            /** @var DefaultModel $object */
+
+            if(!is_numeric($id)) {
+                throw new InvalidDataIdException('Id must be numeric');
+            }
+
+            /** @var ModelInterface $object */
             $reflectionClass = new ReflectionClass($this->defaultModelClassName);
             $object = $reflectionClass->newInstance();
 
@@ -215,31 +226,37 @@ abstract class ControllerBase extends Controller
             $object->loadFromArray($data);
             $object->loadFromJson($this->request->getContent());
             $object = $this->repository->update($object, $id);
+
+            // Convert object to array
             $object = json_decode(json_encode($object), true);
+
+            /**
+             * @var array $object
+             */
             $object = $this->addHATEOAS($object);
-            
+
             return new JsonResponse([
-                'status' => 'OK', 
+                'status' => 'OK',
                 'data' => $object
             ], 200);
-            
+
         } catch (UniqueConstraintViolationException $e) {
             return new JsonResponse([
-                'status' => 'error', 
+                'status' => 'error',
                 'msg' => 'Unique constraint violation.',
                 'dev_details' => $e->getMessage()
             ], 409);
-            
+
         } catch (NotNullConstraintViolationException $e) {
             return new JsonResponse([
-                'status' => 'error', 
+                'status' => 'error',
                 'msg' => 'Field cannot be null.',
                 'dev_details' => $e->getMessage()
             ], 417);
-            
+
         } catch (\Exception $e) {
             return new JsonResponse([
-                'status' => 'error', 
+                'status' => 'error',
                 'msg' => 'Unexpected error.',
                 'dev_details' => $e->getMessage()
             ], 500);
@@ -248,9 +265,9 @@ abstract class ControllerBase extends Controller
 
     /**
      * Delete
-     * 
+     *
      * @param int $id
-     * 
+     *
      * @return JsonResponse
      * @throws \Support3w\Api\Generic\Exception\DataModificationException
      */
@@ -276,9 +293,9 @@ abstract class ControllerBase extends Controller
 
     /**
      * Add hateoas
-     * 
+     *
      * @param array $data
-     * 
+     *
      * @return array
      */
     public function addHATEOAS(array $data)
@@ -288,7 +305,7 @@ abstract class ControllerBase extends Controller
 
     /**
      * Apply filters on Hateoas
-     * 
+     *
      * @return mixed
      */
     abstract public function applyFiltersOnHateoas();

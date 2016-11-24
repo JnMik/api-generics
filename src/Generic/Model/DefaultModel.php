@@ -10,7 +10,7 @@ use Support3w\Api\Generic\Exception\InvalidJsonException;
  *
  * @package Model
  */
-abstract class DefaultModel implements \JsonSerializable
+abstract class DefaultModel implements \JsonSerializable, ModelInterface
 {
     const LONG_NAME = __CLASS__;
 
@@ -91,6 +91,8 @@ abstract class DefaultModel implements \JsonSerializable
 
     /**
      * @param array $array
+     *
+     * @return $this
      */
     public function loadFromArray(array $array)
     {
@@ -107,11 +109,13 @@ abstract class DefaultModel implements \JsonSerializable
                 }
             }
         }
+        return $this;
     }
 
     /**
      * @param $json
-     * @throws InvalidJsonException
+     *
+     * @return $this
      */
     public function loadFromJson($json)
     {
@@ -121,5 +125,6 @@ abstract class DefaultModel implements \JsonSerializable
             throw new InvalidJsonException('Result cannot be decoded to array, is JSON valid ? ');
         }
         $this->loadFromArray($array);
+        return $this;
     }
 }
