@@ -454,6 +454,10 @@ abstract class RepositoryBase
             if (isset($params['sort'])) {
                 unset($params['sort']);
             }
+
+            if(defined('API_KEY_PARAM_NAME') && isset($params[API_KEY_PARAM_NAME])) {
+                unset($params[API_KEY_PARAM_NAME]);
+            }
         }
 
         if (empty($params)) {
