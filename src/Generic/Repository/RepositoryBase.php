@@ -420,12 +420,12 @@ abstract class RepositoryBase
                 foreach ($orderByGroups as $group) {
                     $group = trim($group);
                     if (strstr($group, '-')) {
-                        $sort[] = substr($group, 1) . ' DESC';
+                        $sort[] = $this->resolveTableAliasForParam(substr($group, 1)) . ' DESC';
                     } else {
                         if (strstr($group, '+')) {
-                            $sort[] = substr($group, 1) . ' ASC';
+                            $sort[] = $this->resolveTableAliasForParam(substr($group, 1)) . ' ASC';
                         } else {
-                            $sort[] = $group . ' ASC';
+                            $sort[] = $this->resolveTableAliasForParam($group) . ' ASC';
                         }
                     }
                 }
