@@ -178,7 +178,7 @@ abstract class PagingAbstract
         $parameters = http_build_query($parameters);
         $parameters = urldecode($parameters);
         $parameters = str_replace('[0]', '[]', $parameters);
-        return $url['scheme'] . '://' . $url['host'] . ($url['port'] ? ':' . $url['port'] : '') . $url['path'] . '?start=' . $start . '&limit=' . $limit . '&' . $parameters;
+        return $url['scheme'] . '://' . $url['host'] . (isset($url['port']) ? ':' . $url['port'] : '') . $url['path'] . '?start=' . $start . '&limit=' . $limit . '&' . $parameters;
     }
 
     /**
